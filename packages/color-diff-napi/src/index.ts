@@ -18,26 +18,77 @@
  */
 
 import { diffArrays } from 'diff'
-import type * as hljsNamespace from 'highlight.js'
+// Import the minimal highlight.js core (no languages) instead of the full
+// bundle that loads 190+ grammars (~5-15MB). Individual languages are
+// imported statically below and registered on the core instance. Static
+// imports work in Bun --compile mode (only createRequire fails).
+import hljs from 'highlight.js/lib/core'
 import { basename, extname } from 'path'
 
-// Lazy: defers loading highlight.js until first render. The full bundle
-// registers 190+ language grammars at require time (~50MB, 100-200ms on
-// macOS, several× that on Windows). With a top-level import, any caller
-// chunk that reaches this module — including test/preload.ts via
-// StructuredDiff.tsx → colorDiff.ts — pays that cost at module-eval time
-// and carries the heap for the rest of the process. On Windows CI this
-// pushed later tests in the same shard into GC-pause territory and a
-// beforeEach/afterEach hook timeout (officialRegistry.test.ts, PR #24150).
-// Same lazy pattern the NAPI wrapper used for dlopen.
-type HLJSApi = typeof hljsNamespace.default
+// --- Register commonly-used languages (~25 instead of 190+) ---
+import langBash from 'highlight.js/lib/languages/bash'
+import langC from 'highlight.js/lib/languages/c'
+import langCmake from 'highlight.js/lib/languages/cmake'
+import langCpp from 'highlight.js/lib/languages/cpp'
+import langCsharp from 'highlight.js/lib/languages/csharp'
+import langCss from 'highlight.js/lib/languages/css'
+import langDiff from 'highlight.js/lib/languages/diff'
+import langDockerfile from 'highlight.js/lib/languages/dockerfile'
+import langGo from 'highlight.js/lib/languages/go'
+import langGraphQL from 'highlight.js/lib/languages/graphql'
+import langJava from 'highlight.js/lib/languages/java'
+import langJavaScript from 'highlight.js/lib/languages/javascript'
+import langJson from 'highlight.js/lib/languages/json'
+import langKotlin from 'highlight.js/lib/languages/kotlin'
+import langMakefile from 'highlight.js/lib/languages/makefile'
+import langMarkdown from 'highlight.js/lib/languages/markdown'
+import langPerl from 'highlight.js/lib/languages/perl'
+import langPhp from 'highlight.js/lib/languages/php'
+import langPython from 'highlight.js/lib/languages/python'
+import langRuby from 'highlight.js/lib/languages/ruby'
+import langRust from 'highlight.js/lib/languages/rust'
+import langShell from 'highlight.js/lib/languages/shell'
+import langSql from 'highlight.js/lib/languages/sql'
+import langTypeScript from 'highlight.js/lib/languages/typescript'
+import langXml from 'highlight.js/lib/languages/xml'
+import langYaml from 'highlight.js/lib/languages/yaml'
+
+hljs.registerLanguage('bash', langBash)
+hljs.registerLanguage('c', langC)
+hljs.registerLanguage('cmake', langCmake)
+hljs.registerLanguage('cpp', langCpp)
+hljs.registerLanguage('csharp', langCsharp)
+hljs.registerLanguage('css', langCss)
+hljs.registerLanguage('diff', langDiff)
+hljs.registerLanguage('dockerfile', langDockerfile)
+hljs.registerLanguage('go', langGo)
+hljs.registerLanguage('graphql', langGraphQL)
+hljs.registerLanguage('java', langJava)
+hljs.registerLanguage('javascript', langJavaScript)
+hljs.registerLanguage('json', langJson)
+hljs.registerLanguage('kotlin', langKotlin)
+hljs.registerLanguage('makefile', langMakefile)
+hljs.registerLanguage('markdown', langMarkdown)
+hljs.registerLanguage('perl', langPerl)
+hljs.registerLanguage('php', langPhp)
+hljs.registerLanguage('python', langPython)
+hljs.registerLanguage('ruby', langRuby)
+hljs.registerLanguage('rust', langRust)
+hljs.registerLanguage('shell', langShell)
+hljs.registerLanguage('sql', langSql)
+hljs.registerLanguage('typescript', langTypeScript)
+hljs.registerLanguage('xml', langXml)
+hljs.registerLanguage('yaml', langYaml)
+// JavaScript grammar also handles .mjs/.cjs extensions
+// TypeScript grammar also handles .tsx via auto-detection
+
+type HLJSApi = typeof hljs
 let cachedHljs: HLJSApi | null = null
-function hljs(): HLJSApi {
+function hljsApi(): HLJSApi {
   if (cachedHljs) return cachedHljs
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const mod = require('highlight.js')
-  // highlight.js uses `export =` (CJS). Under bun/ESM the interop wraps it
-  // in .default; under node CJS the module IS the API. Check at runtime.
+  // highlight.js/lib/core uses `export =` (CJS). Under bun/ESM the interop
+  // wraps it in .default; under node CJS the module IS the API. Check at runtime.
+  const mod = hljs as HLJSApi & { default?: HLJSApi }
   cachedHljs = 'default' in mod && mod.default ? mod.default : mod
   return cachedHljs!
 }
@@ -436,9 +487,9 @@ function detectLanguage(
   // Filename-based lookup (handles Dockerfile, Makefile, CMakeLists.txt, etc.)
   const stem = base.split('.')[0] ?? ''
   const byName = FILENAME_LANGS[base] ?? FILENAME_LANGS[stem]
-  if (byName && hljs().getLanguage(byName)) return byName
+  if (byName && hljsApi().getLanguage(byName)) return byName
   if (ext) {
-    const lang = hljs().getLanguage(ext)
+    const lang = hljsApi().getLanguage(ext)
     if (lang) return ext
   }
   // Shebang / first-line detection (strip UTF-8 BOM)
@@ -520,7 +571,7 @@ function highlightLine(
   }
   let result
   try {
-    result = hljs().highlight(code, {
+    result = hljsApi().highlight(code, {
       language: state.lang,
       ignoreIllegals: true,
     })

@@ -5,20 +5,18 @@ import {
 } from 'src/services/analytics/index.js'
 import { installOAuthTokens } from '../cli/handlers/auth.js'
 import { useTerminalSize } from '../hooks/useTerminalSize.js'
-import { setClipboard } from '../ink/termio/osc.js'
-import { useTerminalNotification } from '../ink/useTerminalNotification.js'
-import { Box, Link, Text } from '../ink.js'
+import { setClipboard, useTerminalNotification, Box, Link, Text, KeyboardShortcutHint } from '@anthropic/ink'
 import { useKeybinding } from '../keybindings/useKeybinding.js'
-import { getSSLErrorHint } from '../services/api/errorUtils.js'
+import { getSSLErrorHint } from '@ant/model-provider'
 import { sendNotification } from '../services/notifier.js'
 import { OAuthService } from '../services/oauth/index.js'
 import { getOauthAccountInfo, validateForceLoginOrg } from '../utils/auth.js'
 import { logError } from '../utils/log.js'
 import { getSettings_DEPRECATED, updateSettingsForSource } from '../utils/settings/settings.js'
 import { Select } from './CustomSelect/select.js'
-import { KeyboardShortcutHint } from './design-system/KeyboardShortcutHint.js'
 import { Spinner } from './Spinner.js'
 import TextInput from './TextInput.js'
+import { fi } from 'zod/v4/locales'
 
 type Props = {
   onDone(): void
@@ -271,7 +269,7 @@ export function ConsoleOAuthFlow({
 
         const orgResult = await validateForceLoginOrg()
         if (!orgResult.valid) {
-          throw new Error(orgResult.message)
+          throw new Error((orgResult as { valid: false; message: string }).message)
         }
         // Reset modelType to anthropic when using OAuth login
         updateSettingsForSource('userSettings', { modelType: 'anthropic' } as any)
@@ -311,17 +309,10 @@ export function ConsoleOAuthFlow({
       !pendingOAuthStartRef.current
     ) {
       pendingOAuthStartRef.current = true
-      process.nextTick(
-        (
-          startOAuth: () => Promise<void>,
-          pendingOAuthStartRef: React.MutableRefObject<boolean>,
-        ) => {
-          void startOAuth()
-          pendingOAuthStartRef.current = false
-        },
-        startOAuth,
-        pendingOAuthStartRef,
-      )
+      // Start OAuth flow and reset the pending flag when complete
+      void startOAuth().finally(() => {
+        pendingOAuthStartRef.current = false
+      })
     }
   }, [oauthStatus.state, startOAuth])
 
@@ -556,9 +547,9 @@ function OAuthStatusMessage({
                     state: 'openai_chat_api',
                     baseUrl: process.env.OPENAI_BASE_URL ?? '',
                     apiKey: process.env.OPENAI_API_KEY ?? '',
-                    haikuModel: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL ?? '',
-                    sonnetModel: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL ?? '',
-                    opusModel: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? '',
+                    haikuModel: process.env.OPENAI_DEFAULT_HAIKU_MODEL ?? '',
+                    sonnetModel: process.env.OPENAI_DEFAULT_SONNET_MODEL ?? '',
+                    opusModel: process.env.OPENAI_DEFAULT_OPUS_MODEL ?? '',
                     activeField: 'base_url',
                   })
                 } else if (value === 'gemini_api') {
@@ -567,9 +558,9 @@ function OAuthStatusMessage({
                     state: 'gemini_api',
                     baseUrl: process.env.GEMINI_BASE_URL ?? '',
                     apiKey: process.env.GEMINI_API_KEY ?? '',
-                    haikuModel: process.env.ANTHROPIC_DEFAULT_HAIKU_MODEL ?? '',
-                    sonnetModel: process.env.ANTHROPIC_DEFAULT_SONNET_MODEL ?? '',
-                    opusModel: process.env.ANTHROPIC_DEFAULT_OPUS_MODEL ?? '',
+                    haikuModel: process.env.GEMINI_DEFAULT_HAIKU_MODEL ?? '',
+                    sonnetModel: process.env.GEMINI_DEFAULT_SONNET_MODEL ?? '',
+                    opusModel: process.env.GEMINI_DEFAULT_OPUS_MODEL ?? '',
                     activeField: 'base_url',
                   })
                 } else if (value === 'platform') {
@@ -657,7 +648,30 @@ function OAuthStatusMessage({
         const doSave = useCallback(() => {
           const finalVals = { ...displayValues, [activeField]: inputValue }
           const env: Record<string, string> = {}
-          if (finalVals.base_url) env.ANTHROPIC_BASE_URL = finalVals.base_url
+
+          // Validate base_url if provided
+          if (finalVals.base_url) {
+            try {
+              new URL(finalVals.base_url)
+            } catch {
+              setOAuthStatus({
+                state: 'error',
+                message: 'Invalid base URL: please enter a full URL including protocol (e.g., https://api.example.com)',
+                toRetry: {
+                  state: 'custom_platform',
+                  baseUrl: '',
+                  apiKey: '',
+                  haikuModel: '',
+                  sonnetModel: '',
+                  opusModel: '',
+                  activeField: 'base_url',
+                },
+              })
+              return
+            }
+            env.ANTHROPIC_BASE_URL = finalVals.base_url
+          }
+
           if (finalVals.api_key) env.ANTHROPIC_AUTH_TOKEN = finalVals.api_key
           if (finalVals.haiku_model) env.ANTHROPIC_DEFAULT_HAIKU_MODEL = finalVals.haiku_model
           if (finalVals.sonnet_model) env.ANTHROPIC_DEFAULT_SONNET_MODEL = finalVals.sonnet_model
@@ -669,14 +683,14 @@ function OAuthStatusMessage({
           if (error) {
             setOAuthStatus({
               state: 'error',
-              message: `Failed to save: ${error.message}`,
+              message: 'Failed to save settings. Please try again.',
               toRetry: {
                 state: 'custom_platform',
-                baseUrl: '',
-                apiKey: '',
-                haikuModel: '',
-                sonnetModel: '',
-                opusModel: '',
+                baseUrl: finalVals.base_url ?? '',
+                apiKey: finalVals.api_key ?? '',
+                haikuModel: finalVals.haiku_model ?? '',
+                sonnetModel: finalVals.sonnet_model ?? '',
+                opusModel: finalVals.opus_model ?? '',
                 activeField: 'base_url',
               },
             })
@@ -854,11 +868,34 @@ function OAuthStatusMessage({
         const doOpenAISave = useCallback(() => {
           const finalVals = { ...openaiDisplayValues, [activeField]: openaiInputValue }
           const env: Record<string, string> = {}
-          if (finalVals.base_url) env.OPENAI_BASE_URL = finalVals.base_url
+
+          // Validate base_url if provided
+          if (finalVals.base_url) {
+            try {
+              new URL(finalVals.base_url)
+            } catch {
+              setOAuthStatus({
+                state: 'error',
+                message: 'Invalid base URL: please enter a full URL including protocol (e.g., https://api.example.com)',
+                toRetry: {
+                  state: 'openai_chat_api',
+                  baseUrl: '',
+                  apiKey: '',
+                  haikuModel: '',
+                  sonnetModel: '',
+                  opusModel: '',
+                  activeField: 'base_url',
+                },
+              })
+              return
+            }
+            env.OPENAI_BASE_URL = finalVals.base_url
+          }
+
           if (finalVals.api_key) env.OPENAI_API_KEY = finalVals.api_key
-          if (finalVals.haiku_model) env.ANTHROPIC_DEFAULT_HAIKU_MODEL = finalVals.haiku_model
-          if (finalVals.sonnet_model) env.ANTHROPIC_DEFAULT_SONNET_MODEL = finalVals.sonnet_model
-          if (finalVals.opus_model) env.ANTHROPIC_DEFAULT_OPUS_MODEL = finalVals.opus_model
+          if (finalVals.haiku_model) env.OPENAI_DEFAULT_HAIKU_MODEL = finalVals.haiku_model
+          if (finalVals.sonnet_model) env.OPENAI_DEFAULT_SONNET_MODEL = finalVals.sonnet_model
+          if (finalVals.opus_model) env.OPENAI_DEFAULT_OPUS_MODEL = finalVals.opus_model
           const { error } = updateSettingsForSource('userSettings', {
             modelType: 'openai' as any,
             env,
@@ -866,14 +903,14 @@ function OAuthStatusMessage({
           if (error) {
             setOAuthStatus({
               state: 'error',
-              message: `Failed to save: ${error.message}`,
+              message: 'Failed to save settings. Please try again.',
               toRetry: {
                 state: 'openai_chat_api',
-                baseUrl: '',
-                apiKey: '',
-                haikuModel: '',
-                sonnetModel: '',
-                opusModel: '',
+                baseUrl: finalVals.base_url ?? '',
+                apiKey: finalVals.api_key ?? '',
+                haikuModel: finalVals.haiku_model ?? '',
+                sonnetModel: finalVals.sonnet_model ?? '',
+                opusModel: finalVals.opus_model ?? '',
                 activeField: 'base_url',
               },
             })
@@ -1089,9 +1126,9 @@ function OAuthStatusMessage({
           const env: Record<string, string> = {}
           if (finalVals.base_url) env.GEMINI_BASE_URL = finalVals.base_url
           if (finalVals.api_key) env.GEMINI_API_KEY = finalVals.api_key
-          if (finalVals.haiku_model) env.ANTHROPIC_DEFAULT_HAIKU_MODEL = finalVals.haiku_model
-          if (finalVals.sonnet_model) env.ANTHROPIC_DEFAULT_SONNET_MODEL = finalVals.sonnet_model
-          if (finalVals.opus_model) env.ANTHROPIC_DEFAULT_OPUS_MODEL = finalVals.opus_model
+          if (finalVals.haiku_model) env.GEMINI_DEFAULT_HAIKU_MODEL = finalVals.haiku_model
+          if (finalVals.sonnet_model) env.GEMINI_DEFAULT_SONNET_MODEL = finalVals.sonnet_model
+          if (finalVals.opus_model) env.GEMINI_DEFAULT_OPUS_MODEL = finalVals.opus_model
           const { error } = updateSettingsForSource('userSettings', {
             modelType: 'gemini' as any,
             env,

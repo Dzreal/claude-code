@@ -7,14 +7,14 @@ import type {
   LocalJSXCommandContext,
 } from '../../commands.js'
 import { Select } from '../../components/CustomSelect/index.js'
-import { Dialog } from '../../components/design-system/Dialog.js'
+import { Dialog } from '@anthropic/ink'
 import {
   IdeAutoConnectDialog,
   IdeDisableAutoConnectDialog,
   shouldShowAutoConnectDialog,
   shouldShowDisableAutoConnectDialog,
 } from '../../components/IdeAutoConnectDialog.js'
-import { Box, Text } from '../../ink.js'
+import { Box, Text } from '@anthropic/ink'
 import { clearServerCache } from '../../services/mcp/client.js'
 import type { ScopedMcpServerConfig } from '../../services/mcp/types.js'
 import { useAppState, useSetAppState } from '../../state/AppState.js'
@@ -61,7 +61,7 @@ function IDEScreen({
       } else if (value === 'None' && shouldShowDisableAutoConnectDialog()) {
         setShowDisableAutoConnectDialog(true)
       } else {
-        onSelect(availableIDEs.find(ide => ide.port === parseInt(value)))
+        onSelect(availableIDEs.find(ide => ide.port === parseInt(value, 10)))
       }
     },
     [availableIDEs, onSelect],
@@ -216,7 +216,7 @@ function IDEOpenSelection({
   const handleSelectIDE = useCallback(
     (value: string) => {
       const selectedIDE = availableIDEs.find(
-        ide => ide.port === parseInt(value),
+        ide => ide.port === parseInt(value, 10),
       )
       onSelectIDE(selectedIDE)
     },

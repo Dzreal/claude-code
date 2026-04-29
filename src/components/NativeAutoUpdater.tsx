@@ -5,7 +5,7 @@ import { logForDebugging } from 'src/utils/debug.js'
 import { logError } from 'src/utils/log.js'
 import { useInterval } from 'usehooks-ts'
 import { useUpdateNotification } from '../hooks/useUpdateNotification.js'
-import { Box, Text } from '../ink.js'
+import { Box, Text } from '@anthropic/ink'
 import type { AutoUpdaterResult } from '../utils/autoUpdater.js'
 import { getMaxVersion, getMaxVersionMessage } from '../utils/autoUpdater.js'
 import { isAutoUpdaterDisabled } from '../utils/config.js'
@@ -83,8 +83,8 @@ export function NativeAutoUpdater({
     }
 
     if (
-      "production" === 'test' ||
-      "production" === 'development'
+      process.env.NODE_ENV === 'test' ||
+      process.env.NODE_ENV === 'development'
     ) {
       logForDebugging(
         'NativeAutoUpdater: Skipping update check in test/dev environment',
@@ -169,7 +169,6 @@ export function NativeAutoUpdater({
     // instead so the guard is always current without changing callback
     // identity (which would re-trigger the initial-check useEffect below).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: isUpdating read via ref
   }, [onAutoUpdaterResult, channel])
 
   // Initial check

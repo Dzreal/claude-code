@@ -1,8 +1,9 @@
 import * as React from 'react'
 import { useMemo } from 'react'
 import { useTerminalSize } from '../../hooks/useTerminalSize.js'
-import { Ansi, Text } from '../../ink.js'
+import { Ansi, Text } from '@anthropic/ink'
 import { createHyperlink } from '../../utils/hyperlink.js'
+
 import { jsonParse, jsonStringify } from '../../utils/slowOperations.js'
 import { renderTruncatedContent } from '../../utils/terminal.js'
 import { MessageResponse } from '../MessageResponse.js'
@@ -105,6 +106,7 @@ export function OutputLine({
 export function stripUnderlineAnsi(content: string): string {
   return content.replace(
     // eslint-disable-next-line no-control-regex
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: intentional ANSI escape code regex
     /\u001b\[([0-9]+;)*4(;[0-9]+)*m|\u001b\[4(;[0-9]+)*m|\u001b\[([0-9]+;)*4m/g,
     '',
   )

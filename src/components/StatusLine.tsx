@@ -25,7 +25,7 @@ import {
 } from '../cost-tracker.js'
 import { useMainLoopModel } from '../hooks/useMainLoopModel.js'
 import { type ReadonlySettings, useSettings } from '../hooks/useSettings.js'
-import { Ansi, Box, Text } from '../ink.js'
+import { Ansi, Box, Text } from '@anthropic/ink'
 import { getRawUtilization } from '../services/claudeAiLimits.js'
 import type { Message } from '../types/message.js'
 import type { StatusLineCommandInput } from '../types/statusLine.js'
@@ -370,7 +370,6 @@ function StatusLineInner({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   }, []) // Only run once on mount - settings stable for initial logging
 
   // Initial update on mount + cleanup on unmount
@@ -384,7 +383,6 @@ function StatusLineInner({
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   }, []) // Only run once on mount, not when doUpdate changes
 
   // Get padding from settings or default to 0

@@ -13,11 +13,10 @@ import {
   BRIDGE_LOGIN_INSTRUCTION,
   REMOTE_CONTROL_DISCONNECTED_MSG,
 } from '../../bridge/types.js'
-import { Dialog } from '../../components/design-system/Dialog.js'
-import { ListItem } from '../../components/design-system/ListItem.js'
+import { Dialog, ListItem } from '@anthropic/ink'
 import { shouldShowRemoteCallout } from '../../components/RemoteCallout.js'
 import { useRegisterOverlay } from '../../context/overlayContext.js'
-import { Box, Text } from '../../ink.js'
+import { Box, Text } from '@anthropic/ink'
 import { useKeybindings } from '../../keybindings/useKeybinding.js'
 import {
   type AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
@@ -55,7 +54,6 @@ function BridgeToggle({ onDone, name }: Props): React.ReactNode {
   const replBridgeOutboundOnly = useAppState(s => s.replBridgeOutboundOnly)
   const [showDisconnectDialog, setShowDisconnectDialog] = useState(false)
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: bridge starts once, should not restart on state changes
   useEffect(() => {
     // If already connected or enabled in full bidirectional mode, show
     // disconnect confirmation. Outbound-only (CCR mirror) doesn't count —
@@ -155,7 +153,7 @@ function BridgeDisconnectDialog({ onDone }: Props): React.ReactNode {
       type: 'utf8',
       errorCorrectionLevel: 'L',
       small: true,
-    })
+    } as Parameters<typeof qrToString>[1])
       .then(setQrText)
       .catch(() => setQrText(''))
   }, [showQR, displayUrl])

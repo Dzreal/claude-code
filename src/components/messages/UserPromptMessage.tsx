@@ -2,7 +2,7 @@ import { feature } from 'bun:bundle'
 import type { TextBlockParam } from '@anthropic-ai/sdk/resources/index.mjs'
 import React, { useContext, useMemo } from 'react'
 import { getKairosActive, getUserMsgOptIn } from '../../bootstrap/state.js'
-import { Box } from '../../ink.js'
+import { Box } from '@anthropic/ink'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../../services/analytics/growthbook.js'
 import { useAppState } from '../../state/AppState.js'
 import { isEnvTruthy } from '../../utils/envUtils.js'
@@ -50,18 +50,18 @@ export function UserPromptMessage({
   // external builds.
   const isBriefOnly =
     feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      ?
         useAppState(s => s.isBriefOnly)
       : false
   const viewingAgentTaskId =
     feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      ?
         useAppState(s => s.viewingAgentTaskId)
       : null
   // Hoisted to mount-time — per-message component, re-renders on every scroll.
   const briefEnvEnabled =
     feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      ?
         useMemo(() => isEnvTruthy(process.env.CLAUDE_CODE_BRIEF), [])
       : false
   const useBriefLayout =

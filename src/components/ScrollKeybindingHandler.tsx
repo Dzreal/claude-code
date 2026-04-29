@@ -4,13 +4,8 @@ import {
   useCopyOnSelect,
   useSelectionBgColor,
 } from '../hooks/useCopyOnSelect.js'
-import type { ScrollBoxHandle } from '../ink/components/ScrollBox.js'
-import { useSelection } from '../ink/hooks/use-selection.js'
-import type { FocusMove, SelectionState } from '../ink/selection.js'
-import { isXtermJs } from '../ink/terminal.js'
-import { getClipboardPath } from '../ink/termio/osc.js'
-// eslint-disable-next-line custom-rules/prefer-use-keybindings -- Esc needs conditional propagation based on selection state
-import { type Key, useInput } from '../ink.js'
+import type { ScrollBoxHandle, FocusMove, SelectionState } from '@anthropic/ink'
+import { useSelection, type Key, useInput, isXtermJs, getClipboardPath } from '@anthropic/ink'
 import { useKeybindings } from '../keybindings/useKeybinding.js'
 import { logForDebugging } from '../utils/debug.js'
 
@@ -263,7 +258,7 @@ export function computeWheelStep(
       // the curve handles it (gap=1000ms → m≈0.01 → mult≈1). No frac —
       // rounding loss is minor at high mult, and frac persisting across idle
       // was causing off-by-one on the first click back.
-      const m = Math.pow(0.5, gap / WHEEL_DECAY_HALFLIFE_MS)
+      const m = 0.5 ** (gap / WHEEL_DECAY_HALFLIFE_MS)
       const cap = Math.max(WHEEL_MODE_CAP, state.base * 2)
       const next = 1 + (state.mult - 1) * m + WHEEL_MODE_STEP * m
       state.mult = Math.min(cap, next, state.mult + WHEEL_MODE_RAMP)
@@ -304,7 +299,7 @@ export function computeWheelStep(
     state.mult = 2
     state.frac = 0
   } else {
-    const m = Math.pow(0.5, gap / WHEEL_DECAY_HALFLIFE_MS)
+    const m = 0.5 ** (gap / WHEEL_DECAY_HALFLIFE_MS)
     const cap =
       gap >= WHEEL_DECAY_GAP_MS ? WHEEL_DECAY_CAP_SLOW : WHEEL_DECAY_CAP_FAST
     state.mult = Math.min(cap, 1 + (state.mult - 1) * m + WHEEL_DECAY_STEP * m)

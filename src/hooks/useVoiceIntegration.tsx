@@ -8,9 +8,8 @@ import {
   useSetVoiceState,
   useVoiceState,
 } from '../context/voice.js'
-import { KeyboardEvent } from '../ink/events/keyboard-event.js'
-// eslint-disable-next-line custom-rules/prefer-use-keybindings -- backward-compat bridge until REPL wires handleKeyDown to <Box onKeyDown>
-import { useInput } from '../ink.js'
+import { KeyboardEvent, useInput } from '@anthropic/ink'
+// backward-compat bridge until REPL wires handleKeyDown to <Box onKeyDown>
 import { useOptionalKeybindingContext } from '../keybindings/KeybindingContext.js'
 import { keystrokesEqual } from '../keybindings/resolver.js'
 import type { ParsedKeystroke } from '../keybindings/types.js'
@@ -237,14 +236,13 @@ export function useVoiceIntegration({
   // Voice state selectors. useVoiceEnabled = user intent (settings) +
   // auth + GB kill-switch, with the auth half memoized on authVersion so
   // render loops never hit a cold keychain spawn.
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const voiceEnabled = feature('VOICE_MODE') ? useVoiceEnabled() : false
   const voiceState = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceState)
     : ('idle' as const)
   const voiceInterimTranscript = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceInterimTranscript)
     : ''
 
@@ -417,10 +415,9 @@ export function useVoiceKeybindingHandler({
   const setVoiceState = useSetVoiceState()
   const keybindingContext = useOptionalKeybindingContext()
   const isModalOverlayActive = useIsModalOverlayActive()
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const voiceEnabled = feature('VOICE_MODE') ? useVoiceEnabled() : false
   const voiceState = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceState)
     : 'idle'
 

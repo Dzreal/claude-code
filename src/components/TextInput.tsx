@@ -5,13 +5,7 @@ import { useVoiceState } from '../context/voice.js'
 import { useClipboardImageHint } from '../hooks/useClipboardImageHint.js'
 import { useSettings } from '../hooks/useSettings.js'
 import { useTextInput } from '../hooks/useTextInput.js'
-import {
-  Box,
-  color,
-  useAnimationFrame,
-  useTerminalFocus,
-  useTheme,
-} from '../ink.js'
+import { Box, color, useAnimationFrame, useTerminalFocus, useTheme } from '@anthropic/ink'
 import type { BaseTextInputProps } from '../types/textInputTypes.js'
 import { isEnvTruthy } from '../utils/envUtils.js'
 import type { TextHighlight } from '../utils/textHighlighting.js'
@@ -54,20 +48,20 @@ export default function TextInput(props: Props): React.ReactNode {
   const reducedMotion = settings.prefersReducedMotion ?? false
 
   const voiceState = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceState)
     : ('idle' as const)
   const isVoiceRecording = voiceState === 'recording'
 
   const audioLevels = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceAudioLevels)
     : []
   const smoothedRef = useRef<number[]>(new Array(CURSOR_WAVEFORM_WIDTH).fill(0))
 
   const needsAnimation = isVoiceRecording && !reducedMotion
   const [animRef, animTime] = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useAnimationFrame(needsAnimation ? 50 : null)
     : [() => {}, 0]
 

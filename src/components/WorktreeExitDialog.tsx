@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import type { CommandResultDisplay } from 'src/commands.js'
 import { logEvent } from 'src/services/analytics/index.js'
 import { logForDebugging } from 'src/utils/debug.js'
-import { Box, Text } from '../ink.js'
+import { Box, Text, Dialog } from '@anthropic/ink'
 import { execFileNoThrow } from '../utils/execFileNoThrow.js'
 import { getPlansDirectory } from '../utils/plans.js'
 import { setCwd } from '../utils/Shell.js'
@@ -13,7 +13,6 @@ import {
   killTmuxSession,
 } from '../utils/worktree.js'
 import { Select } from './CustomSelect/select.js'
-import { Dialog } from './design-system/Dialog.js'
 import { Spinner } from './Spinner.js'
 
 // Inline require breaks the cycle this file would otherwise close:
@@ -64,7 +63,7 @@ export function WorktreeExitDialog({
           '--count',
           `${worktreeSession.originalHeadCommit}..HEAD`,
         ])
-        const count = parseInt(commitsStr.trim()) || 0
+        const count = parseInt(commitsStr.trim(), 10) || 0
         setCommitCount(count)
 
         // If no changes and no commits, clean up silently
@@ -95,7 +94,6 @@ export function WorktreeExitDialog({
     }
     void loadChanges()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentional
   }, [worktreeSession])
 
   useEffect(() => {

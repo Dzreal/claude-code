@@ -1,7 +1,7 @@
 import { feature } from 'bun:bundle'
 import * as React from 'react'
 import { useMemo } from 'react'
-import { Box } from 'src/ink.js'
+import { Box } from '@anthropic/ink'
 import { useAppState } from 'src/state/AppState.js'
 import {
   STATUS_TAG,
@@ -100,7 +100,7 @@ function PromptInputQueuedCommandsImpl(): React.ReactNode {
   // component early-returns when viewing a teammate.
   const useBriefLayout =
     feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      ?
         useAppState(s => s.isBriefOnly)
       : false
 

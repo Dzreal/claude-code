@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, render, Text } from '../ink.js'
+import { Box, Dialog, wrappedRender as render, Text } from '@anthropic/ink'
 import { KeybindingSetup } from '../keybindings/KeybindingProviderSetup.js'
 import { AppStateProvider } from '../state/AppState.js'
 import type { ConfigParseError } from '../utils/errors.js'
@@ -10,7 +10,6 @@ import {
 } from '../utils/slowOperations.js'
 import type { ThemeName } from '../utils/theme.js'
 import { Select } from './CustomSelect/index.js'
-import { Dialog } from './design-system/Dialog.js'
 
 interface InvalidConfigHandlerProps {
   error: ConfigParseError
@@ -84,6 +83,7 @@ export async function showInvalidConfigDialog({
     theme: SAFE_ERROR_THEME_NAME,
   }
 
+  // biome-ignore lint/suspicious/noAsyncPromiseExecutor: render must be awaited inside executor
   await new Promise<void>(async resolve => {
     const { unmount } = await render(
       <AppStateProvider>

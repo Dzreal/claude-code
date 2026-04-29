@@ -13,7 +13,7 @@ import { useIdeConnectionStatus } from '../../hooks/useIdeConnectionStatus.js'
 import type { IDESelection } from '../../hooks/useIdeSelection.js'
 import { useMainLoopModel } from '../../hooks/useMainLoopModel.js'
 import { useVoiceEnabled } from '../../hooks/useVoiceEnabled.js'
-import { Box, Text } from '../../ink.js'
+import { Box, Text } from '@anthropic/ink'
 import { useClaudeAiLimits } from '../../services/claudeAiLimitsHook.js'
 import { calculateTokenWarningState } from '../../services/compact/autoCompact.js'
 import type { MCPServerConnection } from '../../services/mcp/types.js'
@@ -254,18 +254,17 @@ function NotificationContent({
 
   // Voice state (VOICE_MODE builds only, runtime-gated by GrowthBook)
   const voiceState = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceState)
     : ('idle' as const)
-  // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
   const voiceEnabled = feature('VOICE_MODE') ? useVoiceEnabled() : false
   const voiceError = feature('VOICE_MODE')
-    ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+    ?
       useVoiceState(s => s.voiceError)
     : null
   const isBriefOnly =
     feature('KAIROS') || feature('KAIROS_BRIEF')
-      ? // biome-ignore lint/correctness/useHookAtTopLevel: feature() is a compile-time constant
+      ?
         useAppState(s => s.isBriefOnly)
       : false
 
@@ -338,16 +337,6 @@ function NotificationContent({
       )}
       {!isBriefOnly && (
         <TokenWarning tokenUsage={tokenUsage} model={mainLoopModel} />
-      )}
-      {shouldShowAutoUpdater && (
-        <AutoUpdaterWrapper
-          verbose={verbose}
-          onAutoUpdaterResult={onAutoUpdaterResult}
-          autoUpdaterResult={autoUpdaterResult}
-          isUpdating={isAutoUpdating}
-          onChangeIsUpdating={onChangeIsUpdating}
-          showSuccessMessage={!isShowingCompactMessage}
-        />
       )}
       {feature('VOICE_MODE')
         ? voiceEnabled &&
